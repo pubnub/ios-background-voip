@@ -9,7 +9,10 @@
 #import <PubNub/PubNub.h>
 #import "AppDelegate.h"
 
-@interface AppDelegate ()
+NSString * const kPNPubKey = @"demo-36";
+NSString * const kPNSubKey = @"demo-36";
+
+@interface AppDelegate () <PNObjectEventListener>
 @property (nonatomic, strong) dispatch_queue_t pubNubQueue;
 - (void)startPubNub;
 @end
@@ -19,8 +22,18 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
+    NSLog(@"%s", __PRETTY_FUNCTION__);
     self.pubNubQueue = dispatch_queue_create("com.PubNub.callbackQueue", DISPATCH_QUEUE_SERIAL);
-    self.client = [PubNub clientWithConfiguration:[PNConfiguration configurationWithPublishKey:@"demo-36" subscribeKey:@"demo-36"] callbackQueue:self.pubNubQueue];
+    PNConfiguration *config = [PNConfiguration configurationWithPublishKey:kPNPubKey subscribeKey:kPNSubKey];
+    config.TLSEnabled = YES;
+    self.client = [PubNub clientWithConfiguration:config callbackQueue:self.pubNubQueue];
+    [self.client addListener:self];
+    [self startPubNub];
+    
+    [[UIApplication sharedApplication] setKeepAliveTimeout:600 handler:^{
+        NSLog(@"%s", __PRETTY_FUNCTION__);
+        NSLog(@"we woke up!");
+    }];
     
     return YES;
 }
@@ -52,11 +65,30 @@
     NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
+#pragma mark - PubNub Helper Methods
+
 - (void)startPubNub {
     if ([self.client isSubscribedOn:@"a"]) {
         return;
     }
     [self.client subscribeToChannels:@[@"a"] withPresence:YES];
+}
+
+#pragma mark - PNObjectEventListener
+
+- (void)client:(PubNub *)client didReceiveMessage:(PNMessageResult *)message {
+    NSLog(@"%s", __PRETTY_FUNCTION__);
+    NSLog(@"message: %@", message.data.message);
+}
+
+- (void)client:(PubNub *)client didReceivePresenceEvent:(PNPresenceEventResult *)event {
+    NSLog(@"%s", __PRETTY_FUNCTION__);
+}
+
+- (void)client:(PubNub *)client didReceiveStatus:(PNStatus *)status {
+    NSLog(@"%s", __PRETTY_FUNCTION__);
+    NSLog(@"status: %@", status.stringifiedCategory);
+    NSLog(@"status: %@", status.stringifiedOperation);
 }
 
 @end
