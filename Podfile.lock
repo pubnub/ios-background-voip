@@ -14,7 +14,17 @@ PODS:
     - CocoaLumberjack (= 2.2.0)
 
 DEPENDENCIES:
-  - PubNub
+  - PubNub (from `https://github.com/pubnub/objective-c.git`, branch `voip`)
+
+EXTERNAL SOURCES:
+  PubNub:
+    :branch: voip
+    :git: https://github.com/pubnub/objective-c.git
+
+CHECKOUT OPTIONS:
+  PubNub:
+    :commit: af4eacef85d5e07e0726371be76227b5f4e8bdd0
+    :git: https://github.com/pubnub/objective-c.git
 
 SPEC CHECKSUMS:
   CocoaLumberjack: 17fe8581f84914d5d7e6360f7c70022b173c3ae0

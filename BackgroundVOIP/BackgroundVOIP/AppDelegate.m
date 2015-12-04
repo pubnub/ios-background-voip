@@ -26,14 +26,24 @@ NSString * const kPNSubKey = @"demo-36";
     self.pubNubQueue = dispatch_queue_create("com.PubNub.callbackQueue", DISPATCH_QUEUE_SERIAL);
     PNConfiguration *config = [PNConfiguration configurationWithPublishKey:kPNPubKey subscribeKey:kPNSubKey];
     config.TLSEnabled = YES;
+    config.VoIPEnabled = YES;
     self.client = [PubNub clientWithConfiguration:config callbackQueue:self.pubNubQueue];
     [self.client addListener:self];
     [self startPubNub];
     
+    __weak typeof (self) wself = self;
     [[UIApplication sharedApplication] setKeepAliveTimeout:600 handler:^{
         NSLog(@"%s", __PRETTY_FUNCTION__);
         NSLog(@"we woke up!");
+        __strong typeof(wself) sself = wself;
+        if (!sself) {
+            return;
+        }
+        [sself startPubNub];
     }];
+    
+    UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge|UIUserNotificationTypeSound categories:nil];
+    [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
     
     return YES;
 }
@@ -79,6 +89,25 @@ NSString * const kPNSubKey = @"demo-36";
 - (void)client:(PubNub *)client didReceiveMessage:(PNMessageResult *)message {
     NSLog(@"%s", __PRETTY_FUNCTION__);
     NSLog(@"message: %@", message.data.message);
+    if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) {
+        UILocalNotification *localNotification = [[UILocalNotification alloc] init];
+        localNotification.alertTitle = @"Phone Call!";
+        id messagePayload = message.data.message;
+        NSString *alertBody = nil;
+        if ([messagePayload isKindOfClass:[NSString class]]) {
+            alertBody = messagePayload;
+        } else if ([messagePayload isKindOfClass:[NSDictionary class]]) {
+            // if this comes from the console in a typical console json payload, pull out the text
+            if (messagePayload[@"text"]) {
+                alertBody = messagePayload[@"text"];
+            }
+        } else {
+            // We can't easily decode message, up to you
+            alertBody = @"You are getting a call!";
+        }
+        localNotification.alertBody = alertBody;
+        [[UIApplication sharedApplication] presentLocalNotificationNow:localNotification];
+    }
 }
 
 - (void)client:(PubNub *)client didReceivePresenceEvent:(PNPresenceEventResult *)event {
