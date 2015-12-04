@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
+@class PubNub;
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
